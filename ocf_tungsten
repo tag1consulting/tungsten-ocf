@@ -57,6 +57,31 @@ Location to store the resource state in.
 <content type="string" default="${HA_VARRUN}/Tungsten-{OCF_RESOURCE_INSTANCE}.state" />
 </parameter>
 
+<parameter name="user" unique="1">
+<longdesc lang="en">
+The user Tungsten is running as. This user will be sudoed to to perform actions, so
+the HA user will have to be able to sudo to this user.
+</longdesc>
+<shortdesc lang="en">The user Tungsten is running as</shortdesc>
+<content type="string" default="tungsten" />
+</parameter>
+
+<parameter name="service" unique="1">
+<longdesc lang="en">
+The name of the service we will be managing, the default is "default", but
+if you have named your service put that name here.
+</longdesc>
+<shortdesc lang="en">Replicator Service Name</shortdesc>
+<content type="string" default="default" />
+</parameter>
+
+<parameter name="type" unique="1">
+<longdesc lang="en">
+The type of replication we will be managing, master-master, master-slave or direct.
+</longdesc>
+<shortdesc lang="en">Replication Type</shortdesc>
+<content type="string" default="master-master" />
+</parameter>
 </parameters>
 
 <actions>

@@ -1,0 +1,7 @@
+
+
+Params:
+
+user - The user tungsten is installed as, this user will be sudoed to to run commands
+service - The service name we will be managing
+type - The type of replication, master-master, master-slave, direct
