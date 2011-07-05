@@ -66,6 +66,14 @@ the HA user will have to be able to sudo to this user.
 <content type="string" default="tungsten" />
 </parameter>
 
+<parameter name="path" unique="1">
+<longdesc lang="en">
+The path to the tungsten replicator bin directory.
+</longdesc>
+<shortdesc lang="en">The path to the tungsten replicator binaries</shortdesc>
+<content type="string" default="/home/tungsten/bin" />
+</parameter>
+
 <parameter name="service" unique="1">
 <longdesc lang="en">
 The name of the service we will be managing, the default is "default", but
