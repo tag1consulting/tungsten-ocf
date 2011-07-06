@@ -124,42 +124,81 @@ END
 }
 
 tungsten_start() {
+    #Check if we are already started, if we are do nothing
     tungsten_monitor
     if [ $? =  $OCF_SUCCESS ]; then
-	return $OCF_SUCCESS
+    	return $OCF_SUCCESS
     fi
-    touch ${OCF_RESKEY_state}
+
+    #Try to start our service
+    ocf_log debug "Trying to start the service"
+    $TREPCTL -service $OCF_RESKEY_service start
+    if [ $? -ne 0 ]; then
+        return $OCF_ERR_GENERIC
+    else
+        return $OCF_SUCCESS
+    fi
 }
 
 tungsten_stop() {
+    #Are we already stopped? If so, do nothing
     tungsten_monitor
-    if [ $? =  $OCF_SUCCESS ]; then
-	rm ${OCF_RESKEY_state}
+    if [ $? = $OCF_NOT_RUNNIN ]; then
+       return $OCF_SUCCESS
     fi
-    return $OCF_SUCCESS
+
+    ocf_log debug "Trying to stop the service"
+    $TREPCTL -service $OCF_RESKEY_service stop
+    if [ $? -ne 0 ]; then
+        return $OCF_ERR_GENERIC
+    else
+        return $OCF_SUCCESS
+    fi
 }
 
 tungsten_monitor() {
-        #Dumb Dumb Dumb
-	
-	if [ -f ${OCF_RESKEY_state} ]; then
-	    return $OCF_SUCCESS
-	fi
-	if false ; then
-		return $OCF_ERR_GENERIC
-	fi
-	return $OCF_NOT_RUNNING
+
+    service_TEXT="`$TREPCTL -service $OCF_RESKEY_service status`"
+    if [ $? -ne 0 ]; then 
+        return $OCF_NOT_RUNNING
+    fi
+    
+    #do specific service checks
+	return $OCF_SUCCESS
 }
 
 tungsten_validate() {
-    # Standard validate 
-    # Is the state directory writable? 
-    state_dir=`dirname "$OCF_RESKEY_state"`
-    touch "$state_dir/$$"
-    if [ $? != 0 ]; then
-	return $OCF_ERR_ARGS
+    if [ -n "$OCF_RESKEY_user" ]; then
+        id $OCF_RESKEY_user &> /dev/null
+        if [ $? -ne 0 ]; then
+            exit $OCF_ERR_ARGS
+        fi
+    else
+        exit $OCF_ERR_ARGS
     fi
-    rm "$state_dir/$$"
+
+    if [ -n "$OCF_RESKEY_path" ]; then
+        if [ ! -d "$OCF_RESKEY_path" ]; then
+            exit $OCF_ERR_ARGS
+        else
+           TREPCTL="sudo -u ${OCF_RESKEY_user} ${OCF_RESKEY_path}/trepctl"
+        fi
+    else
+       exit $OCF_ERR_ARGS
+    fi
+
+    if [ -n "$OCF_RESKEY_service" ]; then
+        $TREPCTL -service $OCF_RESKEY_service status
+        if [ $? -ne 0 ]; then
+            exit $OCF_ERR_ARGS
+        fi
+    else
+        exit $OCF_ERR_ARGS
+    fi
+
+    if [ -z "$OCF_RESKEY_type" ]; then
+        exit $OCF_ERR_ARGS
+    fi
 
     return $OCF_SUCCESS
 }
@@ -177,6 +216,8 @@ if [ "x$OCF_RESKEY_state" = "x" ]; then
 	OCF_RESKEY_state="${HA_VARRUN}/Tungsten-${OCF_RESOURCE_INSTANCE}.state"
     fi
 fi
+
+
 
 case $__OCF_ACTION in
 meta-data)	meta_data
