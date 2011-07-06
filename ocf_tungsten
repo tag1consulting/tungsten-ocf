@@ -162,8 +162,18 @@ tungsten_monitor() {
     if [ $? -ne 0 ]; then 
         return $OCF_NOT_RUNNING
     fi
+
+    if [ -z "`cat $service_TEXT | grep started | grep true`" ]; then
+        ocf_log debug "The service text does not include a correct started line"
+        return $OCF_NOT_RUNNING
+    fi
+
+    if [ -z "`cat $service_TEXT | grep state | grep ONLINE`" ]; then
+        ocf_log debug "The service text does not include a correct state line"
+        return $OCF_NOT_RUNNING
+    fi
     
-    #do specific service checks
+    #do more specific service checks
 	return $OCF_SUCCESS
 }
 
