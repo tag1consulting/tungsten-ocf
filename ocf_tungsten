@@ -159,12 +159,12 @@ tungsten_monitor() {
         return $OCF_NOT_RUNNING
     fi
 
-    if [ -z "`cat $service_TEXT | grep state | grep ONLINE`" ]; then
+    if [ -z "`echo \"$service_TEXT\" | grep state | grep ONLINE`" ]; then
         ocf_log debug "The service text does not include a correct state line"
         return $OCF_NOT_RUNNING
     fi
 
-    if [ -n "`cat $service_TEXT | grep role | grep master`" ]; then
+    if [ -n "`echo \"$service_TEXT\" | grep role | grep master`" ]; then
         return $OCF_RUNNING_MASTER
     fi
     
