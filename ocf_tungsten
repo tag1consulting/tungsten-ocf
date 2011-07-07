@@ -132,7 +132,7 @@ tungsten_start() {
 
     #Try to start our service
     ocf_log debug "Trying to start the service"
-    ocf_run "$TREPCTL -service $OCF_RESKEY_service start" || exit $OCF_ERR_GENERIC
+    ocf_run "sudo -u ${OCF_RESKEY_user} ${OCF_RESKEY_path}/trepctl -service $OCF_RESKEY_service start" || exit $OCF_ERR_GENERIC
     return $OCF_SUCCESS
 }
 
@@ -144,7 +144,7 @@ tungsten_stop() {
     fi
 
     ocf_log debug "Trying to stop the service"
-    $TREPCTL -service $OCF_RESKEY_service stop
+    sudo -u ${OCF_RESKEY_user} ${OCF_RESKEY_path}/trepctl -service $OCF_RESKEY_service stop
     if [ $? -ne 0 ]; then
         return $OCF_ERR_GENERIC
     else
@@ -154,7 +154,8 @@ tungsten_stop() {
 
 tungsten_monitor() {
 
-    service_TEXT="`$TREPCTL -service $OCF_RESKEY_service status`"
+    service_TEXT="`sudo -u ${OCF_RESKEY_user} ${OCF_RESKEY_path}/trepctl -service $OCF_RESKEY_service status`"
+
     if [ $? -ne 0 ]; then 
         return $OCF_NOT_RUNNING
     fi
@@ -185,19 +186,12 @@ tungsten_validate() {
     if [ -n "$OCF_RESKEY_path" ]; then
         if [ ! -d "$OCF_RESKEY_path" ]; then
             exit $OCF_ERR_ARGS
-        else
-           TREPCTL="sudo -u ${OCF_RESKEY_user} ${OCF_RESKEY_path}/trepctl"
         fi
     else
        exit $OCF_ERR_ARGS
     fi
 
-    if [ -n "$OCF_RESKEY_service" ]; then
-        $TREPCTL -service $OCF_RESKEY_service status
-        if [ $? -ne 0 ]; then
-            exit $OCF_ERR_ARGS
-        fi
-    else
+    if [ -z "$OCF_RESKEY_service" ]; then
         exit $OCF_ERR_ARGS
     fi
 
@@ -253,7 +247,7 @@ tungsten_demote() {
     #ocf_run "$TREPCTL -host $OCF_RESKEY_CRM_meta_migrate_target setrole -role master" || exit $OCF_ERR_GENERIC
     #ocf_run "$TREPCTL -host $OCF_RESKEY_CRM_meta_migrate_target online" || exit $OCF_ERR_GENERIC
 
-    ocf_run "$TREPCTL setrole -role slave
+    ocf_run "sudo -u ${OCF_RESKEY_user} ${OCF_RESKEY_path}/trepctl setrole -role slave
 
     return $OCF_SUCCESS
 
@@ -291,20 +285,20 @@ tungsten_promote() {
     esac
 
     #First pass at codifying a simple failover
-    log_position="`$TREPCTL flush | grep -o [0-9]+^`"
-    if [ $? -ne 0 ]; then
-        return $OCF_ERR_GENERIC
-    fi
-    if [ -z "$log_position" [; then
-        return $OCF_ERR_GENERIC
-    fi
-    ocf_run "$TREPCTL -host $OCF_RESKEY_CRM_meta_migrate_target wait -applied $log_position" || exit $OCF_ERR_GENERIC
-    ocf_run "trepctl offline" || exit $OCF_ERR_GENERIC
-    ocf_run "trepctl -host $OCF_RESKEY_CRM_meta_migrate_target offline" || exit $OCF_ERR_GENERIC
-    ocf_run "trepctl -host $OCF_RESKEY_CRM_meta_migrate_target setrole -role master" || exit $OCF_ERR_GENERIC
-    ocf_run "trepctl -host $OCF_RESKEY_CRM_meta_migrate_target online" || exit $OCF_ERR_GENERIC
+    #log_position="`$TREPCTL flush | grep -o [0-9]+^`"
+    #if [ $? -ne 0 ]; then
+    #    return $OCF_ERR_GENERIC
+    #fi
+    #if [ -z "$log_position" [; then
+    #    return $OCF_ERR_GENERIC
+    #fi
+    #ocf_run "$TREPCTL -host $OCF_RESKEY_CRM_meta_migrate_target wait -applied $log_position" || exit $OCF_ERR_GENERIC
+    #ocf_run "trepctl offline" || exit $OCF_ERR_GENERIC
+    #ocf_run "trepctl -host $OCF_RESKEY_CRM_meta_migrate_target offline" || exit $OCF_ERR_GENERIC
+    #ocf_run "trepctl -host $OCF_RESKEY_CRM_meta_migrate_target setrole -role master" || exit $OCF_ERR_GENERIC
+    #ocf_run "trepctl -host $OCF_RESKEY_CRM_meta_migrate_target online" || exit $OCF_ERR_GENERIC
 
-    ocf_run "$TREPCTL setrole -role master
+    ocf_run "sudo -u ${OCF_RESKEY_user} ${OCF_RESKEY_path}/trepctl setrole -role master
 
     return $OCF_SUCCESS
 }
