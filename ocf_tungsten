@@ -132,12 +132,8 @@ tungsten_start() {
 
     #Try to start our service
     ocf_log debug "Trying to start the service"
-    $TREPCTL -service $OCF_RESKEY_service start
-    if [ $? -ne 0 ]; then
-        return $OCF_ERR_GENERIC
-    else
-        return $OCF_SUCCESS
-    fi
+    ocf_run "$TREPCTL -service $OCF_RESKEY_service start" || exit $OCF_ERR_GENERIC
+    return $OCF_SUCCESS
 }
 
 tungsten_stop() {
@@ -160,11 +156,6 @@ tungsten_monitor() {
 
     service_TEXT="`$TREPCTL -service $OCF_RESKEY_service status`"
     if [ $? -ne 0 ]; then 
-        return $OCF_NOT_RUNNING
-    fi
-
-    if [ -z "`cat $service_TEXT | grep started | grep true`" ]; then
-        ocf_log debug "The service text does not include a correct started line"
         return $OCF_NOT_RUNNING
     fi
 
