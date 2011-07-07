@@ -209,22 +209,22 @@ tungsten_demote() {
     tungsten_validate || exit $?
 
     # test the resource's current state
-    foobar_monitor
+    tungsten_monitor
     rc=$?
     case "$rc" in
         "$OCF_SUCCESS")
-            # Running as slave. Normal, expected behavior.
+            # We are already a slave, do nothing
             ocf_log debug "Resource is currently running as Slave"
+            return $OCF_SUCCESS 
             ;;
         "$OCF_RUNNING_MASTER")
-            # Already a master. Unexpected, but not a problem.
-            ocf_log info "Resource is already running as Master"
-            return $OCF_SUCCESS
+            # Expected, we are a master about to be demoted
+            ocf_log info "Resource is running as Master"
             ;;
         "$OCF_NOT_RUNNING")
             # Currently not running. Need to start before promoting.
             ocf_log info "Resource is currently not running"
-            foobar_start
+            tungsten_start
             ;;
         *)
             # Failed resource. Let the cluster manager recover.
@@ -260,7 +260,7 @@ tungsten_promote() {
     tungsten_validate || exit $?
 
     # test the resource's current state
-    foobar_monitor
+    tungsten_monitor
     rc=$?
     case "$rc" in)
         "$OCF_SUCCESS")
@@ -275,7 +275,7 @@ tungsten_promote() {
         "$OCF_NOT_RUNNING")
             # Currently not running. Need to start before promoting.
             ocf_log info "Resource is currently not running"
-            foobar_start
+            tungsten_start
             ;;
         *)
             # Failed resource. Let the cluster manager recover.
