@@ -243,7 +243,7 @@ tungsten_demote() {
     #ocf_run "$TREPCTL -host $OCF_RESKEY_CRM_meta_migrate_target setrole -role master" || exit $OCF_ERR_GENERIC
     #ocf_run "$TREPCTL -host $OCF_RESKEY_CRM_meta_migrate_target online" || exit $OCF_ERR_GENERIC
 
-    ocf_run sudo -u ${OCF_RESKEY_user} ${OCF_RESKEY_path}/trepctl setrole -role slave || exit $OCF_ERR_GENERIC
+    ocf_run sudo -u ${OCF_RESKEY_user} ${OCF_RESKEY_path}/trepctl -service $OCF_RESKEY_service setrole -role slave || exit $OCF_ERR_GENERIC
 
     return $OCF_SUCCESS
 
@@ -294,7 +294,7 @@ tungsten_promote() {
     #ocf_run "trepctl -host $OCF_RESKEY_CRM_meta_migrate_target setrole -role master" || exit $OCF_ERR_GENERIC
     #ocf_run "trepctl -host $OCF_RESKEY_CRM_meta_migrate_target online" || exit $OCF_ERR_GENERIC
 
-    ocf_run sudo -u ${OCF_RESKEY_user} ${OCF_RESKEY_path}/trepctl setrole -role master || exit $OCF_ERR_GENERIC
+    ocf_run sudo -u ${OCF_RESKEY_user} ${OCF_RESKEY_path}/trepctl -service $OCF_RESKEY_service setrole -role master || exit $OCF_ERR_GENERIC
 
     return $OCF_SUCCESS
 }
