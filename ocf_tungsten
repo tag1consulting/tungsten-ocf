@@ -132,24 +132,20 @@ tungsten_start() {
 
     #Try to start our service
     ocf_log debug "Trying to start the service"
-    ocf_run "sudo -u ${OCF_RESKEY_user} ${OCF_RESKEY_path}/trepctl -service $OCF_RESKEY_service start" || exit $OCF_ERR_GENERIC
+    ocf_run "sudo -u ${OCF_RESKEY_user} ${OCF_RESKEY_path}/trepctl -service $OCF_RESKEY_service start -y" || exit $OCF_ERR_GENERIC
     return $OCF_SUCCESS
 }
 
 tungsten_stop() {
     #Are we already stopped? If so, do nothing
     tungsten_monitor
-    if [ $? = $OCF_NOT_RUNNIN ]; then
+    if [ $? = $OCF_NOT_RUNNING ]; then
        return $OCF_SUCCESS
     fi
 
     ocf_log debug "Trying to stop the service"
-    sudo -u ${OCF_RESKEY_user} ${OCF_RESKEY_path}/trepctl -service $OCF_RESKEY_service stop
-    if [ $? -ne 0 ]; then
-        return $OCF_ERR_GENERIC
-    else
-        return $OCF_SUCCESS
-    fi
+    ocf_run "sudo -u ${OCF_RESKEY_user} ${OCF_RESKEY_path}/trepctl -service $OCF_RESKEY_service stop -y" || exit $OCF_ERR_GENERIC
+    return $OCF_SUCCESS
 }
 
 tungsten_monitor() {
