@@ -97,8 +97,8 @@ The type of replication we will be managing, master-master, master-slave or dire
 <action name="stop"         timeout="20" />
 <action name="monitor"      timeout="20" interval="10" depth="0"/>
 <action name="reload"       timeout="20" />
-<action name="migrate_to"   timeout="20" />
-<action name="migrate_from" timeout="20" />
+<action name="promote"      timeout="20" />
+<action name="demote"       timeout="20" />
 <action name="validate-all" timeout="20" />
 <action name="meta-data"    timeout="5" />
 </actions>
@@ -172,6 +172,10 @@ tungsten_monitor() {
         ocf_log debug "The service text does not include a correct state line"
         return $OCF_NOT_RUNNING
     fi
+
+    if [ -n "`cat $service_TEXT | grep role | grep master`" ]; then
+        return $OCF_RUNNING_MASTER
+    fi
     
     #do more specific service checks
 	return $OCF_SUCCESS
@@ -213,18 +217,104 @@ tungsten_validate() {
     return $OCF_SUCCESS
 }
 
-tungsten_migrate_to() {
+tungsten_demote() {
+    local rc
+
+    # exit immediately if configuration is not valid
+    tungsten_validate || exit $?
+
+    # test the resource's current state
+    foobar_monitor
+    rc=$?
+    case "$rc" in)
+        "$OCF_SUCCESS")
+            # Running as slave. Normal, expected behavior.
+            ocf_log debug "Resource is currently running as Slave"
+            ;;
+        "$OCF_RUNNING_MASTER")
+            # Already a master. Unexpected, but not a problem.
+            ocf_log info "Resource is already running as Master"
+            return $OCF_SUCCESS
+            ;;
+        "$OCF_NOT_RUNNING")
+            # Currently not running. Need to start before promoting.
+            ocf_log info "Resource is currently not running"
+            foobar_start
+            ;;
+        *)
+            # Failed resource. Let the cluster manager recover.
+            ocf_log err "Unexpected error, cannot promote"
+            exit $rc
+            ;;
+    esac
+
     #First pass at codifying a simple failover
-    log_position="`$TREPCTL flush | grep -o [0-9]+^`"
-    $TREPCTL -host $OCF_RESKEY_CRM_meta_migrate_target wait -applied $log_position
-    trepctl offline
-    trepctl -host $OCF_RESKEY_CRM_meta_migrate_target offline
-    trepctl -host $OCF_RESKEY_CRM_meta_migrate_target setrole -role master
-    trepctl -host $OCF_RESKEY_CRM_meta_migrate_target online
+    #log_position="`$TREPCTL flush | grep -o [0-9]+^`"
+    #if [ $? -ne 0 ]; then
+    #    return $OCF_ERR_GENERIC
+    #fi
+    #if [ -z "$log_position" [; then
+    #    return $OCF_ERR_GENERIC
+    #fi
+    #ocf_run "$TREPCTL -host $OCF_RESKEY_CRM_meta_migrate_target wait -applied $log_position" || exit $OCF_ERR_GENERIC
+    #ocf_run "$TREPCTL offline" || exit $OCF_ERR_GENERIC
+    #ocf_run "$TREPCTL -host $OCF_RESKEY_CRM_meta_migrate_target offline" || exit $OCF_ERR_GENERIC
+    #ocf_run "$TREPCTL -host $OCF_RESKEY_CRM_meta_migrate_target setrole -role master" || exit $OCF_ERR_GENERIC
+    #ocf_run "$TREPCTL -host $OCF_RESKEY_CRM_meta_migrate_target online" || exit $OCF_ERR_GENERIC
+
+    ocf_run "$TREPCTL setrole -role slave
+
+    return $OCF_SUCCESS
+
 }
 
-tungsten_migrate_from() {
-    #nothing here yet
+tungsten_promote() {
+    local rc
+
+    # exit immediately if configuration is not valid
+    tungsten_validate || exit $?
+
+    # test the resource's current state
+    foobar_monitor
+    rc=$?
+    case "$rc" in)
+        "$OCF_SUCCESS")
+            # Running as slave. Normal, expected behavior.
+            ocf_log debug "Resource is currently running as Slave"
+            ;;
+        "$OCF_RUNNING_MASTER")
+            # Already a master. Unexpected, but not a problem.
+            ocf_log info "Resource is already running as Master"
+            return $OCF_SUCCESS
+            ;;
+        "$OCF_NOT_RUNNING")
+            # Currently not running. Need to start before promoting.
+            ocf_log info "Resource is currently not running"
+            foobar_start
+            ;;
+        *)
+            # Failed resource. Let the cluster manager recover.
+            ocf_log err "Unexpected error, cannot promote"
+            exit $rc
+            ;;
+    esac
+
+    #First pass at codifying a simple failover
+    log_position="`$TREPCTL flush | grep -o [0-9]+^`"
+    if [ $? -ne 0 ]; then
+        return $OCF_ERR_GENERIC
+    fi
+    if [ -z "$log_position" [; then
+        return $OCF_ERR_GENERIC
+    fi
+    ocf_run "$TREPCTL -host $OCF_RESKEY_CRM_meta_migrate_target wait -applied $log_position" || exit $OCF_ERR_GENERIC
+    ocf_run "trepctl offline" || exit $OCF_ERR_GENERIC
+    ocf_run "trepctl -host $OCF_RESKEY_CRM_meta_migrate_target offline" || exit $OCF_ERR_GENERIC
+    ocf_run "trepctl -host $OCF_RESKEY_CRM_meta_migrate_target setrole -role master" || exit $OCF_ERR_GENERIC
+    ocf_run "trepctl -host $OCF_RESKEY_CRM_meta_migrate_target online" || exit $OCF_ERR_GENERIC
+
+    ocf_run "$TREPCTL setrole -role master
+
     return $OCF_SUCCESS
 }
 
@@ -251,17 +341,11 @@ meta-data)	meta_data
 start)		tungsten_start;;
 stop)		tungsten_stop;;
 monitor)	tungsten_monitor;;
-migrate_to)	ocf_log info "Migrating ${OCF_RESOURCE_INSTANCE} to ${OCF_RESKEY_CRM_meta_migrate_target}."
-	        tungsten_migrate_to
-		;;
-migrate_from)	ocf_log info "Migrating ${OCF_RESOURCE_INSTANCE} to ${OCF_RESKEY_CRM_meta_migrate_source}."
-	        tungsten_migrate_from
-		;;
-reload)		ocf_log err "Reloading..."
-	        tungsten_start
-		;;
-validate-all)	tungsten_validate
-        ;;
+promote)	tungsten_promote;;
+demote)		tungsten_demote;;
+reload)		tungsten_start;;
+validate-all)	tungsten_validate;;
+
 usage|help)	tungsten_usage
 		exit $OCF_SUCCESS
 		;;
