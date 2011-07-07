@@ -226,7 +226,7 @@ tungsten_demote() {
     # test the resource's current state
     foobar_monitor
     rc=$?
-    case "$rc" in)
+    case "$rc" in
         "$OCF_SUCCESS")
             # Running as slave. Normal, expected behavior.
             ocf_log debug "Resource is currently running as Slave"
