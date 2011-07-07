@@ -213,6 +213,21 @@ tungsten_validate() {
     return $OCF_SUCCESS
 }
 
+tungsten_migrate_to() {
+    #First pass at codifying a simple failover
+    log_position="`$TREPCTL flush | grep -o [0-9]+^`"
+    $TREPCTL -host $OCF_RESKEY_CRM_meta_migrate_target wait -applied $log_position
+    trepctl offline
+    trepctl -host $OCF_RESKEY_CRM_meta_migrate_target offline
+    trepctl -host $OCF_RESKEY_CRM_meta_migrate_target setrole -role master
+    trepctl -host $OCF_RESKEY_CRM_meta_migrate_target online
+}
+
+tungsten_migrate_from() {
+    #nothing here yet
+    return $OCF_SUCCESS
+}
+
 : ${OCF_RESKEY_CRM_meta_interval=0}
 : ${OCF_RESKEY_CRM_meta_globally_unique:="true"}
 
@@ -237,15 +252,16 @@ start)		tungsten_start;;
 stop)		tungsten_stop;;
 monitor)	tungsten_monitor;;
 migrate_to)	ocf_log info "Migrating ${OCF_RESOURCE_INSTANCE} to ${OCF_RESKEY_CRM_meta_migrate_target}."
-	        tungsten_stop
+	        tungsten_migrate_to
 		;;
 migrate_from)	ocf_log info "Migrating ${OCF_RESOURCE_INSTANCE} to ${OCF_RESKEY_CRM_meta_migrate_source}."
-	        tungsten_start
+	        tungsten_migrate_from
 		;;
 reload)		ocf_log err "Reloading..."
 	        tungsten_start
 		;;
-validate-all)	tungsten_validate;;
+validate-all)	tungsten_validate
+        ;;
 usage|help)	tungsten_usage
 		exit $OCF_SUCCESS
 		;;
